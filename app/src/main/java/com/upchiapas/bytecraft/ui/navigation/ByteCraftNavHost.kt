@@ -2,11 +2,13 @@ package com.upchiapas.bytecraft.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.upchiapas.bytecraft.ByteCraftApplication
 import com.upchiapas.bytecraft.presentation.auth.AuthViewModel
 import com.upchiapas.bytecraft.presentation.auth.LoginScreen
 import com.upchiapas.bytecraft.presentation.auth.RegisterScreen
@@ -18,12 +20,22 @@ fun ByteCraftNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
-    val authViewModel: AuthViewModel = viewModel()
-    val homeViewModel: HomeViewModel = viewModel()
+    val context = LocalContext.current
+    val app = context.applicationContext as ByteCraftApplication
+    val container = app.container
+
+    val authViewModel: AuthViewModel = viewModel(factory = container.authViewModelFactory)
+    val homeViewModel: HomeViewModel = viewModel(factory = container.homeViewModelFactory)
+
+    val startDestination = if (container.sessionManager.isLoggedIn()) {
+        Screen.Home.route
+    } else {
+        Screen.Login.route
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         // Pantalla de Login
@@ -63,6 +75,7 @@ fun ByteCraftNavHost(
             HomeScreen(
                 homeViewModel = homeViewModel,
                 onLogout = {
+                    homeViewModel.logout()
                     // Cierre de sesión: limpia el backstack impidiendo volver con botón Atrás (RF-04)
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }

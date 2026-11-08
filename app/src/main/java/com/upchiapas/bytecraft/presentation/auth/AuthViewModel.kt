@@ -2,14 +2,19 @@ package com.upchiapas.bytecraft.presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.upchiapas.bytecraft.data.local.SessionManager
+import com.upchiapas.bytecraft.domain.repository.AuthRepository
+import com.upchiapas.bytecraft.domain.util.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val authRepository: AuthRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -75,15 +80,30 @@ class AuthViewModel : ViewModel() {
 
         _uiState.update { it.copy(isLoading = true, generalError = null) }
 
-        // Simulación de autenticación (En Commit 4 y 5 se conecta a Retrofit API)
         viewModelScope.launch {
-            delay(500)
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    isLoginSuccess = true,
-                    generalError = null
-                )
+            when (val result = authRepository.login(email, password)) {
+                is NetworkResult.Success -> {
+                    sessionManager.saveAuthToken(result.data.token)
+                    sessionManager.saveUser(result.data.user)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoginSuccess = true,
+                            generalError = null
+                        )
+                    }
+                }
+                is NetworkResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            generalError = result.message
+                        )
+                    }
+                }
+                is NetworkResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
             }
         }
     }
@@ -134,14 +154,30 @@ class AuthViewModel : ViewModel() {
 
         _uiState.update { it.copy(isLoading = true, generalError = null) }
 
-        // Simulación de registro
         viewModelScope.launch {
-            delay(500)
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    isRegisterSuccess = true
-                )
+            when (val result = authRepository.register(name, email, password)) {
+                is NetworkResult.Success -> {
+                    sessionManager.saveAuthToken(result.data.token)
+                    sessionManager.saveUser(result.data.user)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRegisterSuccess = true,
+                            generalError = null
+                        )
+                    }
+                }
+                is NetworkResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            generalError = result.message
+                        )
+                    }
+                }
+                is NetworkResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
             }
         }
     }
