@@ -6,6 +6,7 @@ import com.upchiapas.bytecraft.data.remote.api.ComponentesApiService
 import com.upchiapas.bytecraft.domain.model.Component
 import com.upchiapas.bytecraft.domain.repository.ComponentRepository
 import com.upchiapas.bytecraft.domain.util.NetworkResult
+import org.json.JSONObject
 import java.io.IOException
 
 class ComponentRepositoryImpl(
@@ -19,12 +20,13 @@ class ComponentRepositoryImpl(
                 val body = response.body() ?: emptyList()
                 NetworkResult.Success(body.toDomain())
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error al obtener componentes (${response.code()})"
+                val raw = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(raw, "Error al obtener componentes (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("Fallo de red: imposible contactar el servidor", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("Fallo de red ($detail): imposible contactar el servidor", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error desconocido al consultar el inventario", null)
         }
@@ -41,12 +43,13 @@ class ComponentRepositoryImpl(
                     NetworkResult.Error("Componente no encontrado en el servidor", response.code())
                 }
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Componente no encontrado (${response.code()})"
+                val raw = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(raw, "Componente no encontrado (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("Fallo de red al buscar el componente", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("Fallo de red ($detail) al buscar el componente", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error desconocido al buscar componente", null)
         }
@@ -63,12 +66,13 @@ class ComponentRepositoryImpl(
                     NetworkResult.Error("El servidor no retornó el componente creado", response.code())
                 }
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error al crear el componente (${response.code()})"
+                val raw = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(raw, "Error al crear el componente (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("Fallo de red al crear el componente", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("Fallo de red ($detail) al crear el componente", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error desconocido al crear componente", null)
         }
@@ -88,12 +92,13 @@ class ComponentRepositoryImpl(
                     NetworkResult.Error("El servidor no retornó el componente actualizado", response.code())
                 }
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error al actualizar el componente (${response.code()})"
+                val raw = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(raw, "Error al actualizar el componente (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("Fallo de red al actualizar el componente", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("Fallo de red ($detail) al actualizar el componente", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error desconocido al actualizar componente", null)
         }
@@ -105,14 +110,25 @@ class ComponentRepositoryImpl(
             if (response.isSuccessful) {
                 NetworkResult.Success(Unit)
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error al eliminar el componente (${response.code()})"
+                val raw = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(raw, "Error al eliminar el componente (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("Fallo de red al eliminar el componente", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("Fallo de red ($detail) al eliminar el componente", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error desconocido al eliminar componente", null)
+        }
+    }
+
+    private fun parseErrorMessage(raw: String?, defaultMsg: String): String {
+        if (raw.isNullOrBlank()) return defaultMsg
+        return try {
+            val json = JSONObject(raw)
+            json.optString("message", defaultMsg)
+        } catch (_: Exception) {
+            raw
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.upchiapas.bytecraft.presentation.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -192,6 +195,33 @@ fun RegisterScreen(
                         colors = authTextFieldColors(),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // Banner de Error General / Conexión
+                    if (uiState.generalError != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(ErrorRed.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+                                .border(1.dp, ErrorRed, RoundedCornerShape(10.dp))
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Error de conexión",
+                                tint = ErrorRed,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = uiState.generalError ?: "",
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
 

@@ -7,6 +7,7 @@ import com.upchiapas.bytecraft.data.remote.dto.RegisterRequestDto
 import com.upchiapas.bytecraft.domain.model.AuthSession
 import com.upchiapas.bytecraft.domain.repository.AuthRepository
 import com.upchiapas.bytecraft.domain.util.NetworkResult
+import org.json.JSONObject
 import java.io.IOException
 
 class AuthRepositoryImpl(
@@ -26,12 +27,13 @@ class AuthRepositoryImpl(
                     NetworkResult.Error("Respuesta vacía del servidor", response.code())
                 }
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error de autenticación (${response.code()})"
+                val rawError = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(rawError, "Error de autenticación (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("No se pudo conectar al servidor. Revisa tu conexión a internet o la IP del backend.", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("No se pudo conectar al servidor ($detail). Revisa la conexión o la IP del backend.", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error inesperado durante el inicio de sesión", null)
         }
@@ -50,14 +52,25 @@ class AuthRepositoryImpl(
                     NetworkResult.Error("Respuesta vacía del servidor", response.code())
                 }
             } else {
-                val errorMsg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                    ?: "Error al registrar usuario (${response.code()})"
+                val rawError = response.errorBody()?.string()
+                val errorMsg = parseErrorMessage(rawError, "Error al registrar usuario (${response.code()})")
                 NetworkResult.Error(errorMsg, response.code())
             }
         } catch (e: IOException) {
-            NetworkResult.Error("No se pudo conectar al servidor. Revisa tu conexión a internet o la IP del backend.", null)
+            val detail = e.localizedMessage ?: e.message ?: "Conexión rechazada"
+            NetworkResult.Error("No se pudo conectar al servidor ($detail). Revisa la conexión o la IP del backend.", null)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Error inesperado durante el registro", null)
+        }
+    }
+
+    private fun parseErrorMessage(raw: String?, defaultMsg: String): String {
+        if (raw.isNullOrBlank()) return defaultMsg
+        return try {
+            val json = JSONObject(raw)
+            json.optString("message", defaultMsg)
+        } catch (_: Exception) {
+            raw
         }
     }
 }
