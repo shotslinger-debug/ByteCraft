@@ -71,6 +71,14 @@ fun ComponentFormDialog(
     val categories = listOf("GPU", "CPU", "RAM", "SSD", "MOTHERBOARD")
     val conditions = listOf("NUEVO", "REACONDICIONADO", "USADO")
 
+    val isNombreInvalid = showError && nombre.trim().length < 3
+    val parsedPrecio = precioText.toDoubleOrNull()
+    val isPrecioInvalid = showError && (parsedPrecio == null || parsedPrecio <= 0.0)
+    val parsedStock = stockText.toIntOrNull()
+    val isStockInvalid = showError && (parsedStock == null || parsedStock < 0)
+    val parsedDescuento = descuentoText.toIntOrNull()
+    val isDescuentoInvalid = showError && enOferta && (parsedDescuento == null || parsedDescuento !in 1..90)
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -103,13 +111,18 @@ fun ComponentFormDialog(
                     value = nombre,
                     onValueChange = { nombre = it },
                     label = { Text("Nombre del Componente") },
-                    isError = showError && nombre.trim().length < 3,
+                    isError = isNombreInvalid,
+                    supportingText = {
+                        if (isNombreInvalid) {
+                            Text("Obligatorio (mínimo 3 letras)", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
                     singleLine = true,
                     colors = textFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Selector: Categoría
                 Text("Categoría:", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
@@ -169,6 +182,12 @@ fun ComponentFormDialog(
                         value = precioText,
                         onValueChange = { precioText = it },
                         label = { Text("Precio ($)") },
+                        isError = isPrecioInvalid,
+                        supportingText = {
+                            if (isPrecioInvalid) {
+                                Text("Mayor a 0", color = MaterialTheme.colorScheme.error)
+                            }
+                        },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         colors = textFieldColors(),
@@ -179,6 +198,12 @@ fun ComponentFormDialog(
                         value = stockText,
                         onValueChange = { stockText = it },
                         label = { Text("Stock") },
+                        isError = isStockInvalid,
+                        supportingText = {
+                            if (isStockInvalid) {
+                                Text("Entero ≥ 0", color = MaterialTheme.colorScheme.error)
+                            }
+                        },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         colors = textFieldColors(),
@@ -186,7 +211,7 @@ fun ComponentFormDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Switch: En Oferta
                 Row(
@@ -222,6 +247,12 @@ fun ComponentFormDialog(
                             onValueChange = { descuentoText = it },
                             label = { Text("Descuento (%)") },
                             placeholder = { Text("Ej. 15") },
+                            isError = isDescuentoInvalid,
+                            supportingText = {
+                                if (isDescuentoInvalid) {
+                                    Text("Entre 1% y 90%", color = MaterialTheme.colorScheme.error)
+                                }
+                            },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             colors = textFieldColors(),
@@ -230,16 +261,16 @@ fun ComponentFormDialog(
                     }
                 }
 
-                if (showError) {
+                if (showError && (isNombreInvalid || isPrecioInvalid || isStockInvalid || isDescuentoInvalid)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Verifica que el nombre tenga al menos 3 letras, y precio y stock sean válidos.",
+                        text = "Corrige los campos en rojo para continuar.",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Botones Cancelar y Guardar
                 Row(
@@ -260,7 +291,12 @@ fun ComponentFormDialog(
                             val stock = stockText.toIntOrNull()
                             val descuento = if (enOferta) descuentoText.toIntOrNull() else null
 
-                            if (nombre.trim().length >= 3 && precio != null && precio > 0 && stock != null && stock >= 0) {
+                            val isFormValid = nombre.trim().length >= 3 &&
+                                    precio != null && precio > 0.0 &&
+                                    stock != null && stock >= 0 &&
+                                    (!enOferta || (descuento != null && descuento in 1..90))
+
+                            if (isFormValid) {
                                 val component = Component(
                                     id = initialComponent?.id ?: "comp_${UUID.randomUUID().toString().take(6)}",
                                     nombre = nombre.trim(),
