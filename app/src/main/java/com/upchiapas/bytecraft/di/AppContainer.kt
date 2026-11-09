@@ -26,9 +26,8 @@ interface AppContainer {
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
 
-    // URL base por defecto para el emulador Android hacia el backend Node.js
-    // Si se prueba en AWS EC2, se sustituye por: "http://<IP_EC2>:3000/api/"
-    var baseUrl: String = "http://10.0.2.2:3000/api/"
+    // URL base de producción en AWS EC2 (Elastic IP)
+    var baseUrl: String = "http://52.87.39.224:3000/api/"
 
     override val sessionManager: SessionManager by lazy {
         SessionManager(context.applicationContext)

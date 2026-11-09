@@ -274,7 +274,7 @@ fun LoginScreen(
             ) {
                 Box(modifier = Modifier.size(7.dp).background(CyanNeon, CircleShape))
                 Text(
-                    text = "API REST · AWS / 10.0.2.2",
+                    text = "API REST · AWS EC2 (52.87.39.224)",
                     color = TextSecondary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
